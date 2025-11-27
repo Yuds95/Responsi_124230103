@@ -26,6 +26,9 @@ class _FavoritePageState extends State<FavoritePage> {
                 return ListTile(
                   leading: Image.network(
                     "https://restaurant-api.dicoding.dev/images/small/${r.pictureId}",
+                    width: 60,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, error, _) => Icon(Icons.broken_image),
                   ),
                   title: Text(r.name),
                   subtitle: Text("${r.city} • Rating ${r.rating}"),
@@ -33,7 +36,16 @@ class _FavoritePageState extends State<FavoritePage> {
                     icon: Icon(Icons.delete, color: Colors.red),
                     onPressed: () {
                       favoriteService.removeFavorite(r.id);
-                      setState(() {});
+                      setState(() {}); // Refresh UI
+
+                      // --- TAMBAHAN: Snackbar Hapus Favorit ---
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("${r.name} dihapus dari favorit"),
+                          backgroundColor: Colors.red,
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
                     },
                   ),
                   onTap: () {

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/restaurant_service.dart';
 import '../models/restaurant_model.dart';
+import '../services/auth_service.dart';
 
 class ListRestaurantPage extends StatefulWidget {
   final String username;
 
-  const ListRestaurantPage({required this.username});
+  const ListRestaurantPage({super.key, required this.username});
 
   @override
   _ListRestaurantPageState createState() => _ListRestaurantPageState();
@@ -13,13 +14,14 @@ class ListRestaurantPage extends StatefulWidget {
 
 class _ListRestaurantPageState extends State<ListRestaurantPage> {
   final RestaurantService service = RestaurantService();
+  final AuthService _authService = AuthService();
 
   late Future<List<Restaurant>> restaurantList;
 
   @override
   void initState() {
-    restaurantList = service.getRestaurants();
     super.initState();
+    restaurantList = service.getRestaurants();
   }
 
   @override
@@ -27,6 +29,30 @@ class _ListRestaurantPageState extends State<ListRestaurantPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Hello, ${widget.username}"),
+        automaticallyImplyLeading: false, 
+        leading: IconButton(
+          icon: Icon(Icons.logout),
+          tooltip: "Logout",
+          onPressed: () async {
+            await _authService.logout();
+            
+            // --- TAMBAHAN: Snackbar Logout ---
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Berhasil Logout"),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 1),
+              ),
+            );
+
+            Navigator.pushNamedAndRemoveUntil(
+              context, 
+              '/login', 
+              (route) => false
+            );
+          },
+        ),
+
         actions: [
           IconButton(
             icon: Icon(Icons.favorite),
@@ -37,14 +63,18 @@ class _ListRestaurantPageState extends State<ListRestaurantPage> {
         ],
       ),
 
-      body: FutureBuilder(
+      body: FutureBuilder<List<Restaurant>>(
         future: restaurantList,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (!snapshot.hasData) {
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text("Tidak ada data"));
           }
 
@@ -58,15 +88,23 @@ class _ListRestaurantPageState extends State<ListRestaurantPage> {
               return Card(
                 margin: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 child: ListTile(
-                  leading: Image.network(
-                    "https://restaurant-api.dicoding.dev/images/small/${r.pictureId}",
-                    width: 60,
-                    fit: BoxFit.cover,
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.network(
+                      "https://restaurant-api.dicoding.dev/images/small/${r.pictureId}",
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, error, _) => Container(
+                        width: 60, 
+                        height: 60, 
+                        color: Colors.grey, 
+                        child: Icon(Icons.broken_image)
+                      ),
+                    ),
                   ),
                   title: Text(r.name),
                   subtitle: Text("${r.city} • ⭐ ${r.rating}"),
-
-                  // -------------------- PENTING: BUKA DETAIL --------------------
                   onTap: () {
                     Navigator.pushNamed(
                       context,

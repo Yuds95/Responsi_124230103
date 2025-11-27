@@ -41,6 +41,15 @@ class _LoginPageState extends State<LoginPage> {
                 if (success) {
                   await auth.setLoggedIn(true);
 
+                  // --- TAMBAHAN: Snackbar Login Berhasil ---
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Login Berhasil!"),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+
                   Navigator.pushReplacementNamed(context, "/list",
                       arguments: _username.text);
 
